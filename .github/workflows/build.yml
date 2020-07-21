@@ -1,0 +1,39 @@
+name: Build latest OpenCore
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  watch:
+    types: [started]
+
+jobs:
+  sync:
+    runs-on: macos-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: sync
+        run: (git remote add aci https://github.com/acidanthera/OpenCorePkg;
+             git fetch aci;
+             git rebase aci/master)
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: action
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
+          tags: true
+
+      - name: make
+        run: ./a.sh
+
+      - name: release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          automatic_release_tag: latest
+          files: |
+            UDK/Build/OpenCorePkg/RELEASE_XCODE5/X64/OpenCore*.zip
